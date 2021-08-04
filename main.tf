@@ -1,10 +1,6 @@
 # main.tf
 
-
-# todo
-# connect to aws
-# create an RDS instance
-
+# create a security group and make route 53 CNAME entry
 module "networking" {
   source      = "./modules/networking/"
   common_tags = var.common_tags
@@ -12,24 +8,14 @@ module "networking" {
   rds_address = module.rds.example-01-address
 }
 
+# create RDS instance
 module "rds" {
   source                = "./modules/rds/"
   common_tags           = var.common_tags
   rds_security_group_id = module.networking.rds_security_group_id
 }
 
-# create CNAME with R53
-# done within networking module
-output "address" {
-  value = module.rds.example-01-address
-}
-
-output "cnamed-rds-fqdn" {
-  value = module.networking.rds-fqdn
-}
-
 # create database secret engine with cname
-
 resource "vault_mount" "db" {
   path = "postgres"
   type = "database"
