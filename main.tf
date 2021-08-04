@@ -28,7 +28,6 @@ output "cnamed-rds-fqdn" {
   value = module.networking.rds-fqdn
 }
 
-# connect to vault
 # create database secret engine with cname
 
 resource "vault_mount" "db" {
@@ -39,27 +38,28 @@ resource "vault_mount" "db" {
 resource "vault_database_secret_backend_connection" "postgres" {
   backend       = vault_mount.db.path
   name          = "postgres"
-  allowed_roles = ["dev", "prod"]
+  allowed_roles = ["dev", "prod", "my-role"]
 
   postgresql {
     connection_url = "postgres://${module.rds.example-01-username}:${module.rds.example-01-password}@${module.networking.rds-fqdn}:${module.rds.example-01-port}/${module.rds.example-01-name}"
   }
 }
 
+resource "vault_database_secret_backend_role" "role" {
+  backend             = vault_mount.db.path
+  name                = "my-role"
+  db_name             = vault_database_secret_backend_connection.postgres.name
+  creation_statements = ["CREATE ROLE \"{{name}}\" WITH LOGIN PASSWORD '{{password}}' VALID UNTIL '{{expiration}}';"]
+  default_ttl         = 600
+  max_ttl             = 3600
+}
 
-# # create policies
-# resource "vault_policy" "admin-like" {
-#   name   = "admin-like-policy"
-#   policy = data.vault_policy_document.admin_like_policy_content.hcl
-# }
-
-# resource "vault_policy" "metrics" {
-#   name   = "metrics-policy"
-#   policy = data.vault_policy_document.metrics_policy_content.hcl
-# }
-
-# # Create a token with the admin-namespace-only policy
-# resource "vault_token" "admin-like" {
-#   ttl      = "24h"
-#   policies = [vault_policy.admin-like.name]
-# }
+# should now be able to get creds
+# $ vault read postgres/creds/my-role
+# Key                Value
+# ---                -----
+# lease_id           postgres/creds/my-role/Oy2SWF8xi8UxII37WBgdcVux
+# lease_duration     10m
+# lease_renewable    true
+# password           abc-dfdsQva3zbiKr4jDO
+# username           v-root-my-role-crsDXs7K3oPrOytAtqsW-1628099343
