@@ -50,6 +50,23 @@ output "my-role-creds" {
   value     = data.vault_generic_secret.postgres-secret.*
 }
 
+# Credentials you can use to populate other modules/etc
+output "my-role-username" {
+  sensitive = true
+  value     = data.vault_generic_secret.postgres-secret.data.username
+}
+
+output "my-role-password" {
+  sensitive = true
+  value     = data.vault_generic_secret.postgres-secret.data.password
+}
+
+output "my-role-db-connection" {
+  sensitive = true
+  value     = vault_database_secret_backend_connection.postgres.postgresql[0].connection_url
+}
+
+
 # should now be able to get creds this way, too
 # $ vault read postgres-rds/creds/my-role
 # Key                Value
