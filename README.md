@@ -5,6 +5,14 @@ This repo creates an AWS RDS Postgres instance with an alternate CNAME
 which is region specific), then adds that database to Vault for dynamic
 database secrets.
 
+Why would you want this?
+This is relevant if you want Vault to provide dynamic secrets for an RDS 
+instance that can failover to another region. RDS endpoints are region 
+specific, so a normal pattern is to front the RDS instance with a global 
+load balancer or CNAME entry.  In this example, Vault will be configured 
+to look at the CNAME so its functionality is durable across failover/global
+scenarios. 
+
 To use:
 1. Clone repo
 1. Configure your AWS credentials in your console
