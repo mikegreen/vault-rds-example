@@ -17,7 +17,7 @@ module "rds" {
 
 # create database secret engine with cname
 resource "vault_mount" "db" {
-  path = "postgres"
+  path = "postgres-rds"
   type = "database"
 }
 
@@ -40,12 +40,26 @@ resource "vault_database_secret_backend_role" "role" {
   max_ttl             = 3600
 }
 
-# should now be able to get creds
-# $ vault read postgres/creds/my-role
+# create a dynamic credential from the above db setup
+data "vault_generic_secret" "postgres-secret" {
+  path = "${vault_mount.db.path}/creds/${vault_database_secret_backend_role.role.name}"
+}
+
+output "my-role-creds" {
+  sensitive = true
+  value     = data.vault_generic_secret.postgres-secret.*
+}
+
+# should now be able to get creds this way, too
+# $ vault read postgres-rds/creds/my-role
 # Key                Value
 # ---                -----
-# lease_id           postgres/creds/my-role/Oy2SWF8xi8UxII37WBgdcVux
+# lease_id           postgres-rds/creds/my-role/471MMVPhOo70kQUGHzCvQHwg
 # lease_duration     10m
 # lease_renewable    true
 # password           abc-dfdsQva3zbiKr4jDO
 # username           v-root-my-role-crsDXs7K3oPrOytAtqsW-1628099343
+
+# further spelunking 
+# $ vault lease lookup postgres-rds/creds/my-role/471MMVPhOo70kQUGHzCvQHwg
+# $ vault list sys/leases/lookup/postgres-rds/creds/my-role/
